@@ -94,12 +94,23 @@ than a flag, so the destructive one stays obvious at the call site.
 
 ## Charts
 
-`components/LineChart.tsx` follows the project's data-viz rules: single series so no
-legend, 2px line, ≥8px markers with a 2px surface ring, hairline recessive gridlines at
-the extremes only, one value directly labelled (the rest live in the crosshair readout),
-and a table view behind "Show all sessions". Series color is `--series-1`, which has
-separate validated light and dark steps. If you add a second series, add a legend and
-re-validate the palette rather than picking a color by eye.
+`components/LineChart.tsx` plots **one line per set** — set 1's weight over time, set 2's,
+and so on — so you can see whether your later sets are catching up to your first.
+
+Rules it follows, which any change should preserve:
+
+- **Colors are `--series-1` … `--series-8`, assigned by set number, in fixed order.**
+  Both light and dark steps are validated (adjacent CVD ΔE 9.1 light / 8.4 dark;
+  normal-vision 19.6 / 19.3). Never cycle past 8 — `MAX_SERIES` caps the chart and the
+  rest of the sets stay in the table. Don't add a hue by eye; re-run the palette
+  validator.
+- **The legend is always present** and doubles as the hover readout: it names every set
+  and fills in that set's value for the highlighted session. Text uses text tokens — the
+  swatch carries identity, never colored type.
+- Three light-mode slots sit under 3:1 contrast, so the **table view behind "Show all
+  sessions" is required relief**, not optional. Don't remove it.
+- 2px lines, ≥8px markers with a 2px surface ring, hairline gridlines at the extremes
+  only. Missing sets **break the line** rather than bridging the gap (`buildPath`).
 
 ## Security
 

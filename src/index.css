@@ -19,7 +19,16 @@
   --accent-ink: #ffffff;
   --accent-soft: #e8f0fc;
 
+  /* Categorical slots, fixed order — validated for this surface (adjacent CVD
+     ΔE 9.1, normal-vision 19.6). Never cycle past 8; assign by set number. */
   --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
   --grid: #e2e2de;
 
   --good: #1a7f4b;
@@ -52,7 +61,15 @@
     --accent-ink: #ffffff;
     --accent-soft: #1e2c3f;
 
+    /* Same eight hues re-stepped for the dark surface, validated as a set. */
     --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
     --grid: #303030;
 
     --good: #35b06e;
@@ -797,12 +814,6 @@ code {
   stroke-linecap: round;
 }
 
-.series-area {
-  fill: var(--series-1);
-  opacity: 0.1;
-  stroke: none;
-}
-
 .series-dot {
   fill: var(--series-1);
   /* 2px surface ring keeps overlapping dots legible */
@@ -815,17 +826,33 @@ code {
   stroke-width: 1;
 }
 
-.chart-readout {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
+/* Legend doubles as the hover readout: it always names every set, and fills in
+   that set's value for whichever session is highlighted. Text stays on text
+   tokens — identity comes from the swatch beside it, never colored type. */
+.legend {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.chart-readout strong {
+.legend-date {
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.legend-item strong {
   color: var(--text-primary);
 }
 

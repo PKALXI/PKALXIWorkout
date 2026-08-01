@@ -3,14 +3,14 @@ import { useAuth } from '../auth'
 import { listSessions, normName } from '../db'
 import type { LoggedSet, Session } from '../types'
 import { fmtDate, fmtWeight, useUnit } from '../units'
-import LineChart, { type ChartPoint } from '../components/LineChart'
+import LineChart, { MAX_SERIES, type Series } from '../components/LineChart'
 
 type Metric = 'top' | 'e1rm' | 'volume'
 
 const METRICS: { id: Metric; label: string; help: string }[] = [
-  { id: 'top', label: 'Top set', help: 'Heaviest weight lifted for at least one rep' },
-  { id: 'e1rm', label: 'Est. 1RM', help: 'Epley estimate: weight × (1 + reps ÷ 30)' },
-  { id: 'volume', label: 'Volume', help: 'Total weight moved: sum of weight × reps' },
+  { id: 'top', label: 'Weight', help: 'One line per set — the weight you used on that set' },
+  { id: 'e1rm', label: 'Est. 1RM', help: 'Per set, Epley estimate: weight × (1 + reps ÷ 30)' },
+  { id: 'volume', label: 'Volume', help: 'Per set, weight × reps. The stat is the session total.' },
 ]
 
 const topSet = (sets: LoggedSet[]) =>
@@ -21,10 +21,18 @@ const e1rm = (sets: LoggedSet[]) =>
 
 const volume = (sets: LoggedSet[]) => sets.reduce((sum, s) => sum + s.weight * s.reps, 0)
 
+/** Session-level number for the headline stat and the table. */
 function measure(metric: Metric, sets: LoggedSet[]) {
   if (metric === 'top') return topSet(sets).weight
   if (metric === 'e1rm') return e1rm(sets)
   return volume(sets)
+}
+
+/** Same metric for a single set — this is what each line in the chart plots. */
+function measureSet(metric: Metric, set: LoggedSet) {
+  if (metric === 'top') return set.weight
+  if (metric === 'e1rm') return set.weight * (1 + set.reps / 30)
+  return set.weight * set.reps
 }
 
 interface ExerciseHistory {
@@ -138,13 +146,20 @@ export default function Progress() {
 
       <ul className="card-list">
         {filtered.map((h) => {
-          const points: ChartPoint[] = h.points.map((p) => ({
-            date: p.date,
-            value: Math.round(measure(metric, p.sets) * 10) / 10,
-            label: `${p.sets.length} set${p.sets.length === 1 ? '' : 's'}`,
+          const dates = h.points.map((p) => p.date)
+          const sessionValues = h.points.map((p) => Math.round(measure(metric, p.sets) * 10) / 10)
+          const setCount = Math.min(
+            MAX_SERIES,
+            h.points.reduce((n, p) => Math.max(n, p.sets.length), 0),
+          )
+          const series: Series[] = Array.from({ length: setCount }, (_, k) => ({
+            label: `Set ${k + 1}`,
+            values: h.points.map((p) =>
+              p.sets[k] ? Math.round(measureSet(metric, p.sets[k]) * 10) / 10 : null,
+            ),
           }))
-          const first = points[0].value
-          const latest = points[points.length - 1].value
+          const first = sessionValues[0]
+          const latest = sessionValues[sessionValues.length - 1]
           const delta = latest - first
           const pct = first > 0 ? (delta / first) * 100 : 0
           const isOpen = expanded === h.key
@@ -155,8 +170,8 @@ export default function Progress() {
                 <div>
                   <h2 className="card-title">{h.name}</h2>
                   <p className="muted small">
-                    {points.length} session{points.length === 1 ? '' : 's'} ·{' '}
-                    {fmtDate(points[0].date)} → {fmtDate(points[points.length - 1].date)}
+                    {dates.length} session{dates.length === 1 ? '' : 's'} · {fmtDate(dates[0])} →{' '}
+                    {fmtDate(dates[dates.length - 1])}
                   </p>
                 </div>
                 <div className="stat">
@@ -164,7 +179,7 @@ export default function Progress() {
                     {metric === 'volume' ? Math.round(latest).toLocaleString() : latest}
                     <span className="stat-unit">{suffix}</span>
                   </span>
-                  {points.length > 1 && (
+                  {dates.length > 1 && (
                     <span className={`delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}`}>
                       {delta > 0 ? '▲' : delta < 0 ? '▼' : '–'} {Math.abs(Math.round(pct))}%
                     </span>
@@ -172,7 +187,7 @@ export default function Progress() {
                 </div>
               </div>
 
-              <LineChart points={points} suffix={suffix} />
+              <LineChart dates={dates} series={series} suffix={suffix} />
 
               <button
                 className="btn btn-ghost btn-sm btn-block"
