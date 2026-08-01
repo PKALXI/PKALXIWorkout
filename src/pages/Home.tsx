@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { deletePlan, listPlans, listSessions, savePlan } from '../db'
+import { countSessionsForPlan, deletePlanWithSessions, listPlans, listSessions, savePlan } from '../db'
 import { PPL_SPLIT } from '../presets'
 import type { Plan, Session } from '../types'
 import { daysAgo, useUnit } from '../units'
@@ -42,10 +42,15 @@ export default function Home() {
 
   async function removePlan(plan: Plan) {
     if (!user) return
-    if (!confirm(`Delete "${plan.name}"? Workouts you already logged with it are kept.`)) return
+    const logged = await countSessionsForPlan(user.uid, plan.id)
+    const tail = logged
+      ? `\n\nThis also deletes ${logged} logged workout${logged === 1 ? '' : 's'} — they disappear from History and Progress. This can't be undone.`
+      : ''
+    if (!confirm(`Delete "${plan.name}"?${tail}`)) return
     setPlans((ps) => ps.filter((p) => p.id !== plan.id))
+    setSessions((ss) => ss.filter((s) => s.planId !== plan.id))
     clearDraft(plan.id)
-    await deletePlan(user.uid, plan.id)
+    await deletePlanWithSessions(user.uid, plan.id)
   }
 
   const lastDone = (planId: string) => sessions.find((s) => s.planId === planId)

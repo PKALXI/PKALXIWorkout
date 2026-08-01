@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -11,6 +12,8 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
+  where,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { LoggedExercise, Plan, Session } from './types'
@@ -51,8 +54,26 @@ export async function savePlan(
   return ref.id
 }
 
-export async function deletePlan(uid: string, planId: string) {
+/** Exact number of logged workouts for a plan — server-side count, not a document read. */
+export async function countSessionsForPlan(uid: string, planId: string) {
+  const snap = await getCountFromServer(query(sessionsCol(uid), where('planId', '==', planId)))
+  return snap.data().count
+}
+
+/**
+ * Delete a plan and every workout logged with it. The sessions query is a lone
+ * `where`, so it stays on an automatic single-field index.
+ */
+export async function deletePlanWithSessions(uid: string, planId: string) {
+  const snap = await getDocs(query(sessionsCol(uid), where('planId', '==', planId)))
+  // batches cap at 500 writes
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = writeBatch(db)
+    for (const d of snap.docs.slice(i, i + 400)) batch.delete(d.ref)
+    await batch.commit()
+  }
   await deleteDoc(doc(plansCol(uid), planId))
+  return snap.size
 }
 
 /* ---------- sessions ---------- */

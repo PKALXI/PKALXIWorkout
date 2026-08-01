@@ -55,8 +55,15 @@ users/{uid}/sessions/{sessionId} { planId, planName, startedAt, finishedAt,
 ```
 
 A **plan** is a template (one day of the split). A **session** is one performance of
-it, denormalised — it stores exercise names and the sets actually done, so editing or
-deleting a plan never rewrites history.
+it, denormalised — it stores the exercise names and the sets actually done, so editing
+a plan never rewrites past sessions.
+
+**Deleting a plan is a cascade**: `deletePlanWithSessions` removes the plan *and* every
+session with that `planId`, so the workouts leave History and Progress too. Both delete
+paths (the trash button on a plan card, and Delete plan in the editor) go through it,
+and both confirm with the exact session count from `countSessionsForPlan`. There is no
+undo — if you add a "keep the history" variant later, it needs its own function rather
+than a flag, so the destructive one stays obvious at the call site.
 
 ## Conventions worth keeping
 

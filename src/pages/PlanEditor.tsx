@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { deletePlan, getPlan, savePlan } from '../db'
+import { countSessionsForPlan, deletePlanWithSessions, getPlan, savePlan } from '../db'
+import { clearDraft } from '../draft'
 import type { PlanExercise } from '../types'
 
 const blankExercise = (): PlanExercise => ({
@@ -60,8 +61,13 @@ export default function PlanEditor() {
 
   async function handleDelete() {
     if (!user || !planId) return
-    if (!confirm(`Delete "${name}"? Logged workouts are kept.`)) return
-    await deletePlan(user.uid, planId)
+    const logged = await countSessionsForPlan(user.uid, planId)
+    const tail = logged
+      ? `\n\nThis also deletes ${logged} logged workout${logged === 1 ? '' : 's'} — they disappear from History and Progress. This can't be undone.`
+      : ''
+    if (!confirm(`Delete "${name}"?${tail}`)) return
+    clearDraft(planId)
+    await deletePlanWithSessions(user.uid, planId)
     navigate('/')
   }
 
