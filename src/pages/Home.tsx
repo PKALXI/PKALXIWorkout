@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { listPlans, listSessions, savePlan } from '../db'
+import { deletePlan, listPlans, listSessions, savePlan } from '../db'
 import { PPL_SPLIT } from '../presets'
 import type { Plan, Session } from '../types'
 import { daysAgo, useUnit } from '../units'
-import { hasDraft } from '../draft'
+import { clearDraft, hasDraft } from '../draft'
 
 export default function Home() {
   const { user, signOut } = useAuth()
@@ -38,6 +38,14 @@ export default function Home() {
     }
     await load()
     setSeeding(false)
+  }
+
+  async function removePlan(plan: Plan) {
+    if (!user) return
+    if (!confirm(`Delete "${plan.name}"? Workouts you already logged with it are kept.`)) return
+    setPlans((ps) => ps.filter((p) => p.id !== plan.id))
+    clearDraft(plan.id)
+    await deletePlan(user.uid, plan.id)
   }
 
   const lastDone = (planId: string) => sessions.find((s) => s.planId === planId)
@@ -103,9 +111,22 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="card-actions">
-                    <Link className="btn btn-ghost btn-sm" to={`/plan/${plan.id}`}>
-                      Edit
+                    <Link
+                      className="icon-btn"
+                      to={`/plan/${plan.id}`}
+                      aria-label={`Edit ${plan.name}`}
+                      title="Edit"
+                    >
+                      ✏️
                     </Link>
+                    <button
+                      className="icon-btn icon-btn-danger"
+                      onClick={() => void removePlan(plan)}
+                      aria-label={`Delete ${plan.name}`}
+                      title="Delete"
+                    >
+                      🗑
+                    </button>
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={() => navigate(`/workout/${plan.id}`)}

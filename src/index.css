@@ -264,7 +264,18 @@ code {
   border-radius: var(--radius-sm);
   background: var(--surface-1);
   color: var(--text-secondary);
+  font-size: 0.95rem;
+  text-decoration: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
+.icon-btn-danger {
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--border));
 }
 
 /* ---------------------------------------------------------------
