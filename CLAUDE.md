@@ -1,0 +1,101 @@
+# CLAUDE.md
+
+Guidance for Claude Code working in this repo.
+
+## What this is
+
+A phone-first workout tracker. You build plans (one per day of your split, e.g. a
+6-day PPL), tap **Start**, and the app walks you through the exercises one screen at
+a time, showing what you lifted last time so you know what to beat. Everything is
+per-user and lives in Firestore.
+
+Vite + React 19 + TypeScript, Firebase Auth (Google) + Firestore, deployed on
+Firebase Hosting. No UI library — plain CSS with custom properties in
+`src/index.css`.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on :5173. `-- --host` to reach it from your phone. |
+| `npm run build` | Typecheck (`tsc -b`) then build to `dist/`. |
+| `npm run preview` | Serve the production build locally. |
+| `npm run lint` | oxlint. |
+| `firebase deploy` | Hosting + Firestore rules. Run `npm run build` first. |
+| `firebase deploy --only hosting` | Ship the app without touching rules. |
+
+## Setup
+
+Config comes from `.env.local` (gitignored) — see `.env.example` for the keys.
+Values are in Firebase console → Project settings → Your apps → Web app.
+Without them the app renders `src/pages/Setup.tsx` instead of crashing, so
+`npm run dev` still boots on a fresh clone.
+
+## Layout
+
+```
+src/
+  firebase.ts    Firebase init; exports `isConfigured` so a missing .env.local degrades gracefully
+  auth.tsx       AuthProvider + useAuth (Google popup sign-in)
+  db.ts          All Firestore reads/writes + derived helpers. Nothing else talks to Firestore.
+  types.ts       Plan / PlanExercise / Session / LoggedExercise / LoggedSet
+  draft.ts       In-progress workout persisted to localStorage
+  units.ts       kg/lb preference + date formatting
+  presets.ts     The starter 6-day PPL split
+  components/    NavBar, LineChart
+  pages/         Login, Setup, Home, PlanEditor, Workout, Progress, History
+```
+
+## Data model
+
+```
+users/{uid}/plans/{planId}      { name, exercises: [{ id, name, targetSets, targetReps }], createdAt, updatedAt }
+users/{uid}/sessions/{sessionId} { planId, planName, startedAt, finishedAt,
+                                   entries: [{ exerciseId, name, sets: [{ weight, reps }] }] }
+```
+
+A **plan** is a template (one day of the split). A **session** is one performance of
+it, denormalised — it stores exercise names and the sets actually done, so editing or
+deleting a plan never rewrites history.
+
+## Conventions worth keeping
+
+- **All Firestore access goes through `src/db.ts`.** Pages call those functions; they
+  never import `firebase/firestore` directly.
+- **Queries use a single `orderBy` on purpose.** `listSessions` pulls recent sessions
+  newest-first and everything else — "what did I lift last time", the progress charts —
+  is derived client-side. That keeps the app on Firestore's automatic single-field
+  indexes, so `firestore.indexes.json` stays empty and deploys need no index wait. If
+  you add a `where` + `orderBy` query, you have signed up for a composite index.
+- **Exercises match by normalised name (`normName`), not id.** Each plan generates its
+  own uuid for an exercise, so "Barbell Row" in Pull A and Pull B must still share a
+  history. Anything comparing exercises across sessions uses the name key.
+- **Sessions are append-only from the workout screen.** The in-progress workout lives in
+  localStorage (`draft.ts`) and is written to Firestore once, on Finish. Phones lock
+  mid-set; don't move this to per-set writes without a reason.
+- **Weight unit is display-only.** Numbers are stored unitless; `units.ts` decides how
+  they're shown. Don't convert on write.
+
+## Mobile rules (this app is used on a phone, in a gym)
+
+- Tap targets ≥ 44px (`--tap`), primary actions ≥ 52px and within thumb reach.
+- Inputs are `font-size: 16px` — anything smaller makes iOS Safari zoom on focus.
+- Layout respects `env(safe-area-inset-*)`; `index.html` sets `viewport-fit=cover`.
+- Use `100dvh`, never `100vh` (mobile browser chrome).
+- Light and dark are both hand-picked token sets in `:root` — don't invert one to get
+  the other.
+
+## Charts
+
+`components/LineChart.tsx` follows the project's data-viz rules: single series so no
+legend, 2px line, ≥8px markers with a 2px surface ring, hairline recessive gridlines at
+the extremes only, one value directly labelled (the rest live in the crosshair readout),
+and a table view behind "Show all sessions". Series color is `--series-1`, which has
+separate validated light and dark steps. If you add a second series, add a legend and
+re-validate the palette rather than picking a color by eye.
+
+## Security
+
+`firestore.rules` scopes every document to `users/{uid}` and allows access only to that
+signed-in user. Any new collection must live under that path, or the rules need updating
+deliberately.
