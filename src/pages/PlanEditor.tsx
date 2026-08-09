@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { countSessionsForPlan, deletePlanWithSessions, getPlan, savePlan } from '../db'
 import { clearDraft } from '../draft'
+import NumberField from '../components/NumberField'
 import type { PlanExercise } from '../types'
 
 const blankExercise = (): PlanExercise => ({
@@ -122,28 +123,22 @@ export default function PlanEditor() {
               </button>
             </div>
             <div className="exercise-row-bottom">
-              <label className="mini-field">
-                <span>Sets</span>
-                <input
-                  className="input input-num"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  value={x.targetSets}
-                  onChange={(e) => update(x.id, { targetSets: Math.max(1, +e.target.value || 1) })}
-                />
-              </label>
-              <label className="mini-field">
-                <span>Reps</span>
-                <input
-                  className="input input-num"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  value={x.targetReps}
-                  onChange={(e) => update(x.id, { targetReps: Math.max(1, +e.target.value || 1) })}
-                />
-              </label>
+              <NumberField
+                label="Sets"
+                value={x.targetSets}
+                onChange={(n) => update(x.id, { targetSets: n })}
+                min={1}
+                max={20}
+                steppers
+              />
+              <NumberField
+                label="Reps"
+                value={x.targetReps}
+                onChange={(n) => update(x.id, { targetReps: n })}
+                min={1}
+                max={100}
+                steppers
+              />
               <div className="reorder">
                 <button className="icon-btn" aria-label="Move up" onClick={() => move(i, -1)}>
                   ↑

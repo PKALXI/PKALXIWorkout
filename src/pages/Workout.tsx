@@ -5,6 +5,7 @@ import { getPlan, lastPerformanceByExercise, listSessions, normName, saveSession
 import { clearDraft, loadDraft, saveDraft } from '../draft'
 import type { LoggedExercise, LoggedSet, Plan, Session } from '../types'
 import { daysAgo, fmtWeight, useUnit } from '../units'
+import NumberField from '../components/NumberField'
 
 /** Sets to show for an exercise the user has done before: repeat last time's numbers. */
 function prefill(targetSets: number, targetReps: number, last?: LoggedExercise): LoggedSet[] {
@@ -181,32 +182,23 @@ export default function Workout() {
           {entry.sets.map((s, i) => (
             <li key={i} className="set-row">
               <span className="set-num">{i + 1}</span>
-              <label className="set-input">
-                <span>weight ({unit})</span>
-                <input
-                  className="input input-num"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.5"
-                  value={s.weight}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => updateSet(i, { weight: Math.max(0, +e.target.value || 0) })}
-                />
-              </label>
+              <NumberField
+                label={`weight (${unit})`}
+                value={s.weight}
+                onChange={(n) => updateSet(i, { weight: n })}
+                min={0}
+                max={2000}
+                step={2.5}
+                decimal
+              />
               <span className="times">×</span>
-              <label className="set-input">
-                <span>reps</span>
-                <input
-                  className="input input-num"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  value={s.reps}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => updateSet(i, { reps: Math.max(0, +e.target.value || 0) })}
-                />
-              </label>
+              <NumberField
+                label="reps"
+                value={s.reps}
+                onChange={(n) => updateSet(i, { reps: n })}
+                min={0}
+                max={999}
+              />
               <button className="icon-btn" aria-label={`Remove set ${i + 1}`} onClick={() => removeSet(i)}>
                 ✕
               </button>

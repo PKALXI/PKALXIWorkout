@@ -445,8 +445,60 @@ code {
   align-items: flex-end;
 }
 
-.exercise-row-bottom .mini-field {
-  width: 74px;
+/* number field ------------------------------------------------- */
+.num-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.num-field-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: center;
+}
+
+.num-field-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.num-field-controls .input {
+  min-width: 0;
+  flex: 1;
+}
+
+.stepper {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stepper:active {
+  transform: scale(0.94);
+}
+
+.stepper:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.exercise-row-bottom .num-field {
+  flex: 1;
 }
 
 .reorder {
@@ -673,19 +725,8 @@ code {
   font-size: 0.9rem;
 }
 
-.set-input {
+.set-row .num-field {
   flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.set-input span {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  text-align: center;
 }
 
 .times {
