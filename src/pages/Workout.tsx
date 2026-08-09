@@ -6,7 +6,7 @@ import { clearDraft, loadDraft, saveDraft } from '../draft'
 import type { LoggedExercise, LoggedSet, Plan, PlanSet, Session } from '../types'
 
 const uniformReps = (sets: PlanSet[]) => sets.every((s) => s.reps === sets[0].reps)
-import { daysAgo, fmtWeight, useUnit } from '../units'
+import { daysAgo, fmtWeight, useUnit, weightStep } from '../units'
 import NumberField from '../components/NumberField'
 
 /**
@@ -201,7 +201,7 @@ export default function Workout() {
                 onChange={(n) => updateSet(i, { weight: n })}
                 min={0}
                 max={2000}
-                step={2.5}
+                step={weightStep(unit)}
                 decimal
               />
               <span className="times">×</span>

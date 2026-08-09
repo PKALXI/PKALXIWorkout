@@ -3,9 +3,13 @@ import type { WeightUnit } from './types'
 
 const KEY = 'pkalxi.unit'
 
+/** lb is the default; the header chip switches it. */
 export function getUnit(): WeightUnit {
-  return localStorage.getItem(KEY) === 'lb' ? 'lb' : 'kg'
+  return localStorage.getItem(KEY) === 'kg' ? 'kg' : 'lb'
 }
+
+/** Plate math: 5 lb a jump (2.5 a side), 2.5 kg (1.25 a side). */
+export const weightStep = (unit: WeightUnit) => (unit === 'lb' ? 5 : 2.5)
 
 /** Weight unit is a display-only preference, so it lives in localStorage, not Firestore. */
 export function useUnit(): [WeightUnit, (u: WeightUnit) => void] {
