@@ -49,10 +49,16 @@ src/
 ## Data model
 
 ```
-users/{uid}/plans/{planId}      { name, exercises: [{ id, name, targetSets, targetReps }], createdAt, updatedAt }
+users/{uid}/plans/{planId}      { name, exercises: [{ id, name, sets: [{ reps }] }], createdAt, updatedAt }
 users/{uid}/sessions/{sessionId} { planId, planName, startedAt, finishedAt,
                                    entries: [{ exerciseId, name, sets: [{ weight, reps }] }] }
 ```
+
+**Rep targets are per set** — `sets: [{reps:5},{reps:5},{reps:8},{reps:12}]` — so ladders and
+drop sets are expressible. Older plans stored `targetSets`/`targetReps`; `normalizeExercise`
+in `db.ts` expands those into `sets` on read, and the legacy fields are dropped the next
+time the plan is saved. Read paths must go through `listPlans`/`getPlan` so nothing else
+ever sees the old shape.
 
 A **plan** is a template (one day of the split). A **session** is one performance of
 it, denormalised — it stores the exercise names and the sets actually done, so editing

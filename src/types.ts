@@ -1,11 +1,18 @@
 import type { Timestamp } from 'firebase/firestore'
 
+/** A planned set. Each set carries its own rep target, so 5/5/8/12 is expressible. */
+export interface PlanSet {
+  reps: number
+}
+
 /** One exercise as it appears in a saved plan (the template, not a logged result). */
 export interface PlanExercise {
   id: string
   name: string
-  targetSets: number
-  targetReps: number
+  sets: PlanSet[]
+  /** Pre-per-set-reps shape. Normalised into `sets` on read; never written. */
+  targetSets?: number
+  targetReps?: number
 }
 
 /** A named day of a split, e.g. "Push A". Stored at users/{uid}/plans/{planId}. */

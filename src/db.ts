@@ -16,21 +16,40 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { LoggedExercise, Plan, Session } from './types'
+import type { LoggedExercise, Plan, PlanExercise, Session } from './types'
 
 const plansCol = (uid: string) => collection(db, 'users', uid, 'plans')
 const sessionsCol = (uid: string) => collection(db, 'users', uid, 'sessions')
 
 /* ---------- plans ---------- */
 
+/**
+ * Plans written before per-set rep targets stored `targetSets`/`targetReps`.
+ * Expand those into a `sets` array on read so the rest of the app only ever
+ * deals with one shape; the legacy fields disappear the next time it's saved.
+ */
+function normalizeExercise(x: PlanExercise): PlanExercise {
+  if (Array.isArray(x.sets) && x.sets.length > 0) {
+    return { id: x.id, name: x.name, sets: x.sets }
+  }
+  const count = Math.max(1, x.targetSets ?? 3)
+  const reps = x.targetReps ?? 10
+  return { id: x.id, name: x.name, sets: Array.from({ length: count }, () => ({ reps })) }
+}
+
+const normalizePlan = (plan: Plan): Plan => ({
+  ...plan,
+  exercises: (plan.exercises ?? []).map(normalizeExercise),
+})
+
 export async function listPlans(uid: string): Promise<Plan[]> {
   const snap = await getDocs(query(plansCol(uid), orderBy('createdAt', 'asc')))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Plan)
+  return snap.docs.map((d) => normalizePlan({ id: d.id, ...d.data() } as Plan))
 }
 
 export async function getPlan(uid: string, planId: string): Promise<Plan | null> {
   const snap = await getDoc(doc(plansCol(uid), planId))
-  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Plan) : null
+  return snap.exists() ? normalizePlan({ id: snap.id, ...snap.data() } as Plan) : null
 }
 
 export async function savePlan(

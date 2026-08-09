@@ -1,10 +1,12 @@
 import type { PlanExercise } from './types'
 
-const ex = (name: string, targetSets: number, targetReps: number): PlanExercise => ({
+/** `ex('Squat', 4, 6)` → 4 sets of 6; `ex('Squat', [5, 5, 8, 12])` → a rep ladder. */
+const ex = (name: string, sets: number | number[], reps = 10): PlanExercise => ({
   id: crypto.randomUUID(),
   name,
-  targetSets,
-  targetReps,
+  sets: Array.isArray(sets)
+    ? sets.map((r) => ({ reps: r }))
+    : Array.from({ length: sets }, () => ({ reps })),
 })
 
 /** Six-day Push/Pull/Legs, offered as a one-tap starting point on an empty account. */

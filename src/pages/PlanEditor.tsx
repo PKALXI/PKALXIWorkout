@@ -9,8 +9,7 @@ import type { PlanExercise } from '../types'
 const blankExercise = (): PlanExercise => ({
   id: crypto.randomUUID(),
   name: '',
-  targetSets: 3,
-  targetReps: 10,
+  sets: [{ reps: 10 }, { reps: 10 }, { reps: 10 }],
 })
 
 export default function PlanEditor() {
@@ -39,6 +38,39 @@ export default function PlanEditor() {
     setExercises((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)))
   }
 
+  function updateSet(id: string, setIdx: number, reps: number) {
+    setExercises((xs) =>
+      xs.map((x) =>
+        x.id === id
+          ? { ...x, sets: x.sets.map((s, i) => (i === setIdx ? { reps } : s)) }
+          : x,
+      ),
+    )
+  }
+
+  function addSet(id: string) {
+    setExercises((xs) =>
+      xs.map((x) => (x.id === id ? { ...x, sets: [...x.sets, { ...x.sets.at(-1)! }] } : x)),
+    )
+  }
+
+  function removeSet(id: string, setIdx: number) {
+    setExercises((xs) =>
+      xs.map((x) =>
+        x.id === id && x.sets.length > 1
+          ? { ...x, sets: x.sets.filter((_, i) => i !== setIdx) }
+          : x,
+      ),
+    )
+  }
+
+  /** The common case is still "same reps every set" — one tap instead of N edits. */
+  function matchAllSets(id: string) {
+    setExercises((xs) =>
+      xs.map((x) => (x.id === id ? { ...x, sets: x.sets.map(() => ({ ...x.sets[0] })) } : x)),
+    )
+  }
+
   function move(index: number, delta: number) {
     setExercises((xs) => {
       const next = [...xs]
@@ -52,8 +84,8 @@ export default function PlanEditor() {
   async function handleSave() {
     if (!user) return
     const cleaned = exercises
-      .map((x) => ({ ...x, name: x.name.trim() }))
-      .filter((x) => x.name.length > 0)
+      .map((x) => ({ id: x.id, name: x.name.trim(), sets: x.sets }))
+      .filter((x) => x.name.length > 0 && x.sets.length > 0)
     if (!name.trim() || cleaned.length === 0) return
     setSaving(true)
     await savePlan(user.uid, { id: planId, name: name.trim(), exercises: cleaned })
@@ -122,23 +154,39 @@ export default function PlanEditor() {
                 ✕
               </button>
             </div>
+            <ul className="plan-sets">
+              {x.sets.map((s, si) => (
+                <li key={si} className="plan-set">
+                  <span className="plan-set-num">Set {si + 1}</span>
+                  <NumberField
+                    label="reps"
+                    value={s.reps}
+                    onChange={(n) => updateSet(x.id, si, n)}
+                    min={1}
+                    max={100}
+                    steppers
+                  />
+                  <button
+                    className="icon-btn"
+                    aria-label={`Remove set ${si + 1}`}
+                    onClick={() => removeSet(x.id, si)}
+                    disabled={x.sets.length === 1}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+
             <div className="exercise-row-bottom">
-              <NumberField
-                label="Sets"
-                value={x.targetSets}
-                onChange={(n) => update(x.id, { targetSets: n })}
-                min={1}
-                max={20}
-                steppers
-              />
-              <NumberField
-                label="Reps"
-                value={x.targetReps}
-                onChange={(n) => update(x.id, { targetReps: n })}
-                min={1}
-                max={100}
-                steppers
-              />
+              <button className="btn btn-ghost btn-sm" onClick={() => addSet(x.id)}>
+                + Set
+              </button>
+              {x.sets.length > 1 && new Set(x.sets.map((s) => s.reps)).size > 1 && (
+                <button className="btn btn-ghost btn-sm" onClick={() => matchAllSets(x.id)}>
+                  All {x.sets[0].reps}
+                </button>
+              )}
               <div className="reorder">
                 <button className="icon-btn" aria-label="Move up" onClick={() => move(i, -1)}>
                   ↑

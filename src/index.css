@@ -441,8 +441,44 @@ code {
 
 .exercise-row-bottom {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
+}
+
+/* per-set rep targets inside the plan editor */
+.plan-sets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plan-set {
+  display: flex;
   align-items: flex-end;
+  gap: 8px;
+}
+
+.plan-set-num {
+  flex: 0 0 46px;
+  padding-bottom: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.plan-set .num-field {
+  flex: 1;
+}
+
+.plan-set .num-field-label {
+  display: none;
+}
+
+.plan-set .icon-btn:disabled {
+  opacity: 0.3;
 }
 
 /* number field ------------------------------------------------- */
@@ -716,13 +752,21 @@ code {
 }
 
 .set-num {
-  flex: 0 0 24px;
-  height: 38px;
-  display: grid;
-  place-items: center;
+  flex: 0 0 30px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.set-num small {
+  font-size: 0.62rem;
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 .set-row .num-field {

@@ -3,16 +3,23 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { getPlan, lastPerformanceByExercise, listSessions, normName, saveSession } from '../db'
 import { clearDraft, loadDraft, saveDraft } from '../draft'
-import type { LoggedExercise, LoggedSet, Plan, Session } from '../types'
+import type { LoggedExercise, LoggedSet, Plan, PlanSet, Session } from '../types'
+
+const uniformReps = (sets: PlanSet[]) => sets.every((s) => s.reps === sets[0].reps)
 import { daysAgo, fmtWeight, useUnit } from '../units'
 import NumberField from '../components/NumberField'
 
-/** Sets to show for an exercise the user has done before: repeat last time's numbers. */
-function prefill(targetSets: number, targetReps: number, last?: LoggedExercise): LoggedSet[] {
-  const count = Math.max(targetSets, last?.sets.length ?? 0)
+/**
+ * Sets to show for an exercise. What you did last time wins as the default —
+ * it's the number you're trying to beat — and the plan's per-set rep target
+ * fills in for sets you've never logged.
+ */
+function prefill(planSets: PlanSet[], last?: LoggedExercise): LoggedSet[] {
+  const count = Math.max(planSets.length, last?.sets.length ?? 0)
   return Array.from({ length: count }, (_, i) => {
     const source = last?.sets[i] ?? last?.sets[last.sets.length - 1]
-    return { weight: source?.weight ?? 0, reps: source?.reps ?? targetReps }
+    const planned = planSets[i]?.reps ?? planSets.at(-1)?.reps ?? 8
+    return { weight: source?.weight ?? 0, reps: source?.reps ?? planned }
   })
 }
 
@@ -52,7 +59,7 @@ export default function Workout() {
           p.exercises.map((x) => ({
             exerciseId: x.id,
             name: x.name,
-            sets: prefill(x.targetSets, x.targetReps, lastMap.get(normName(x.name))?.entry),
+            sets: prefill(x.sets, lastMap.get(normName(x.name))?.entry),
           })),
         )
       }
@@ -158,7 +165,9 @@ export default function Workout() {
       <div className="workout-body">
         <h1 className="exercise-name">{planExercise.name}</h1>
         <p className="target">
-          Target {planExercise.targetSets} × {planExercise.targetReps}
+          {uniformReps(planExercise.sets)
+            ? `Target ${planExercise.sets.length} × ${planExercise.sets[0].reps}`
+            : `Target ${planExercise.sets.map((s) => s.reps).join(' / ')}`}
         </p>
 
         {last ? (
@@ -181,7 +190,11 @@ export default function Workout() {
         <ul className="set-list">
           {entry.sets.map((s, i) => (
             <li key={i} className="set-row">
-              <span className="set-num">{i + 1}</span>
+              <span className="set-num">
+                {i + 1}
+                {/* the rep target for this specific set, so a 5/5/8/12 ladder is visible while logging */}
+                {planExercise.sets[i] && <small>×{planExercise.sets[i].reps}</small>}
+              </span>
               <NumberField
                 label={`weight (${unit})`}
                 value={s.weight}
